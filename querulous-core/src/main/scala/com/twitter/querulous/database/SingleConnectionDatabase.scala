@@ -2,7 +2,7 @@ package com.twitter.querulous.database
 
 import org.apache.commons.dbcp.DriverManagerConnectionFactory
 import java.sql.{SQLException, Connection}
-import com.twitter.conversions.time._
+import concurrent.duration._
 
 class SingleConnectionDatabaseFactory(defaultUrlOptions: Map[String, String]) extends DatabaseFactory {
   def this() = this(Map.empty)
@@ -20,12 +20,12 @@ class SingleConnectionDatabaseFactory(defaultUrlOptions: Map[String, String]) ex
 }
 
 class SingleConnectionDatabase(
-  val hosts: List[String],
-  val name: String,
-  val username: String,
-  password: String,
-  val extraUrlOptions: Map[String, String],
-  val driverName: String)
+  val hosts           :List[String],
+  val name            :String,
+  val username        :String,
+  password            :String,
+  val extraUrlOptions :Map[String, String],
+  val driverName      :String)
 extends Database {
   Class.forName("com.mysql.jdbc.Driver")
 

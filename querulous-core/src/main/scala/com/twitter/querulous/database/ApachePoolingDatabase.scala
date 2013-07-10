@@ -3,17 +3,16 @@ package com.twitter.querulous.database
 import java.sql.{SQLException, Connection}
 import org.apache.commons.dbcp.{PoolableConnectionFactory, DriverManagerConnectionFactory, PoolingDataSource}
 import org.apache.commons.pool.impl.GenericObjectPool
-import com.twitter.util.Duration
+import concurrent.duration.Duration
 
 class ApachePoolingDatabaseFactory(
-  val minOpenConnections: Int,
-  val maxOpenConnections: Int,
-  checkConnectionHealthWhenIdleFor: Duration,
-  maxWaitForConnectionReservation: Duration,
-  checkConnectionHealthOnReservation: Boolean,
-  evictConnectionIfIdleFor: Duration,
-  defaultUrlOptions: Map[String, String]
-) extends DatabaseFactory {
+    val minOpenConnections              :Int,
+    val maxOpenConnections              :Int,
+    checkConnectionHealthWhenIdleFor    :Duration,
+    maxWaitForConnectionReservation     :Duration,
+    checkConnectionHealthOnReservation  :Boolean,
+    evictConnectionIfIdleFor            :Duration,
+    defaultUrlOptions                   :Map[String, String] ) extends DatabaseFactory {
 
   def this(minConns: Int, maxConns: Int, checkIdle: Duration, maxWait: Duration, checkHealth: Boolean, evictTime: Duration) = {
     this(minConns, maxConns, checkIdle, maxWait, checkHealth, evictTime, Map.empty)
@@ -45,18 +44,18 @@ class ApachePoolingDatabaseFactory(
 }
 
 class ApachePoolingDatabase(
-  val hosts: List[String],
-  val name: String,
-  val username: String,
-  password: String,
-  val extraUrlOptions: Map[String, String],
-  val driverName: String,
-  minOpenConnections: Int,
-  maxOpenConnections: Int,
-  checkConnectionHealthWhenIdleFor: Duration,
-  val openTimeout: Duration,
-  checkConnectionHealthOnReservation: Boolean,
-  evictConnectionIfIdleFor: Duration)
+  val hosts           :List[String],
+  val name            :String,
+  val username        :String,
+  password            :String,
+  val extraUrlOptions :Map[String, String],
+  val driverName      :String,
+  minOpenConnections  :Int,
+  maxOpenConnections  :Int,
+  checkConnectionHealthWhenIdleFor   :Duration,
+  val openTimeout     :Duration,
+  checkConnectionHealthOnReservation :Boolean,
+  evictConnectionIfIdleFor           :Duration )
 extends Database {
 
   Class.forName("com.mysql.jdbc.Driver")
@@ -65,12 +64,12 @@ extends Database {
   config.maxActive = maxOpenConnections
   config.maxIdle = maxOpenConnections
   config.minIdle = minOpenConnections
-  config.maxWait = openTimeout.inMillis
+  config.maxWait = openTimeout.toMillis
 
-  config.timeBetweenEvictionRunsMillis = checkConnectionHealthWhenIdleFor.inMillis
+  config.timeBetweenEvictionRunsMillis = checkConnectionHealthWhenIdleFor.toMillis
   config.testWhileIdle = false
   config.testOnBorrow = checkConnectionHealthOnReservation
-  config.minEvictableIdleTimeMillis = evictConnectionIfIdleFor.inMillis
+  config.minEvictableIdleTimeMillis = evictConnectionIfIdleFor.toMillis
 
   config.lifo = false
 

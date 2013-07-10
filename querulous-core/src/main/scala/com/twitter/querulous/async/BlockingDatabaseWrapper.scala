@@ -1,49 +1,47 @@
 package com.twitter.querulous.async
 
-import java.util.logging.{Logger, Level}
-import java.util.concurrent.{Executors, CancellationException, ThreadPoolExecutor}
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, RejectedExecutionException}
-import java.util.concurrent.atomic.AtomicBoolean
+//import java.util.logging.{Logger, Level}
+//import java.util.concurrent.{Executors, CancellationException, ThreadPoolExecutor}
+//import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, RejectedExecutionException}
+//import java.util.concurrent.atomic.AtomicBoolean
 import java.sql.Connection
-import com.twitter.util.{Future, FuturePool, JavaTimer, TimeoutException}
-import com.twitter.querulous.{StatsCollector, NullStatsCollector, DaemonThreadFactory}
+//import com.twitter.util.{Future, FuturePool, JavaTimer, TimeoutException}
+import concurrent._
+import com.twitter.querulous.{StatsCollector, NullStatsCollector }//, DaemonThreadFactory}
 import com.twitter.querulous.database.{Database, DatabaseFactory}
 import com.twitter.querulous.config
 
 class BlockingDatabaseWrapperFactory(
-  workPoolSize: Int,
-  maxWaiters: Int,
-  factory: DatabaseFactory,
-  stats: StatsCollector = NullStatsCollector)
-extends AsyncDatabaseFactory {
+    contextFactory :() => ExecutionContext,
+    factory       :DatabaseFactory,
+    stats         :StatsCollector = NullStatsCollector )
+  extends AsyncDatabaseFactory {
+
   def apply(
-    hosts: List[String],
-    name: String,
-    username: String,
-    password: String,
-    urlOptions: Map[String, String],
-    driverName: String
-  ): AsyncDatabase = {
+    hosts    :List[String],
+    name     :String,
+    username :String,
+    password :String,
+    urlOptions :Map[String, String],
+    driverName :String              ): AsyncDatabase = {
+
     new BlockingDatabaseWrapper(
-      workPoolSize,
-      maxWaiters,
       factory(hosts, name, username, password, urlOptions, driverName),
       stats
-    )
+    )( contextFactory() )
   }
 }
 
-private object AsyncConnectionCheckout {
+/*private object AsyncConnectionCheckout {
   lazy val checkoutTimer = new JavaTimer(true)
-}
+}*/
 
 class BlockingDatabaseWrapper(
-  workPoolSize: Int,
-  maxWaiters: Int,
-  protected[async] val database: Database,
-  stats: StatsCollector = NullStatsCollector)
-extends AsyncDatabase {
-  import AsyncConnectionCheckout._
+    protected[async] val database: Database,
+    stats         :StatsCollector = NullStatsCollector )( implicit context :ExecutionContext )
+  extends AsyncDatabase {
+  
+  //import AsyncConnectionCheckout._
 
   val dbStr = database.hosts.mkString(",") + "-" + database.name
 
@@ -51,15 +49,16 @@ extends AsyncDatabase {
   // returns an ExecutorService, which unfortunately doesn't give us as much visibility into stats as
   // the ThreadPoolExecutor, so we create one ourselves. We use a LinkedBlockingQueue for memory efficiency
   // since maxWaiters can be very high (configuration default is Int.MaxValue, i.e. unbounded).
-  private val executor = {
+ /*private val executor = {
     val e = new ThreadPoolExecutor(workPoolSize, workPoolSize, 0L, TimeUnit.MILLISECONDS,
                                    new LinkedBlockingQueue[Runnable](maxWaiters),
                                    new DaemonThreadFactory("asyncWorkPool-" + dbStr));
     stats.addGauge("db-async-waiters-" + dbStr)(e.getQueue.size)
     e
-  }
-  private val workPool = FuturePool(executor)
-  private val openTimeout = database.openTimeout
+  }*/
+
+  //private val workPool = FuturePool(executor)
+  //private val openTimeout = database.openTimeout
 
   // We cache the connection checked out from the underlying database in a thread local so
   // that each workPool thread can hold on to a connection for its lifetime. This saves expensive
@@ -79,11 +78,11 @@ extends AsyncDatabase {
   // To do this, we use a trick implemented in the ExecutorServiceFuturePool for cancellation - i.e.,
   // setup a timeout and cancel the request iff it hasn't already started executing, coordinating
   // via an AtomicBoolean.
-  def withConnection[R](f: Connection => R): Future[R] = {
-    val startCoordinator = new AtomicBoolean(true)
-    val future = workPool {
-      val isRunnable = startCoordinator.compareAndSet(true, false)
-      if (isRunnable) {
+  def withConnection[R](f: Connection => R): Future[R] = future {
+    //val startCoordinator = new AtomicBoolean(true)
+    //future {//workPool {
+      //val isRunnable = startCoordinator.compareAndSet(true, false)
+      //if (isRunnable) {
         val connection = tlConnection.get()
         try {
           f(connection)
@@ -104,15 +103,15 @@ extends AsyncDatabase {
             throw e
           }
         }
-      } else {
+    /*  } else {
         throw new CancellationException
-      }
+      }*/
     }
 
     // If openTimeout elapsed and our task has still not started, cancel it and return the
     // exception. If not, rescue the exception with the *original* future, as if nothing
     // happened. Any other exception - just propagate unchanged.
-    future.within(checkoutTimer, openTimeout) rescue {
+    /* future.within(checkoutTimer, openTimeout) rescue {
       case e: TimeoutException => {
         val isCancellable = startCoordinator.compareAndSet(true, false)
         if (isCancellable) {
@@ -131,8 +130,8 @@ extends AsyncDatabase {
         stats.incr("db-async-max-waiters-exceeded-" + dbStr, 1)
         Future.exception(e)
       }
-    }
-  }
+    } */
+  //}
 
   // Equality overrides.
   override def equals(other: Any) = other match {

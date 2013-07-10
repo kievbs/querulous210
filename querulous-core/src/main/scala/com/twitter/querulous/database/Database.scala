@@ -1,7 +1,7 @@
 package com.twitter.querulous.database
 
 import java.sql.Connection
-import com.twitter.util.Duration
+import concurrent.duration.Duration
 
 object Database {
   val DEFAULT_DRIVER_NAME = "jdbc:mysql"
@@ -48,12 +48,12 @@ trait DatabaseProxy extends Database {
 }
 
 trait Database {
-  def driverName: String
-  def hosts: List[String]
-  def name: String
-  def username: String
-  def extraUrlOptions: Map[String, String]
-  def openTimeout: Duration
+  def driverName      :String
+  def hosts           :List[String]
+  def name            :String
+  def username        :String
+  def extraUrlOptions :Map[String, String]
+  def openTimeout     :Duration
 
   def urlOptions = Database.defaultUrlOptions ++ extraUrlOptions
 

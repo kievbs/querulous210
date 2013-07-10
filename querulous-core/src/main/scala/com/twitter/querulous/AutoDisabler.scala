@@ -1,18 +1,20 @@
 package com.twitter.querulous
 
-import com.twitter.util.{Time, Duration}
+import concurrent.duration._
+import compat.Platform
 import java.sql.SQLException
 
 trait AutoDisabler {
   protected val disableErrorCount: Int
   protected val disableDuration: Duration
 
-  private var disabledUntil: Time = Time.epoch
+  //private var disabledUntil: Time = Time.epoch
+  private var disabledUntil :Long = Long.MaxValue
   private var consecutiveErrors = 0
 
   protected def throwIfDisabled(throwMessage: String): Unit = {
     synchronized {
-      if (Time.now < disabledUntil) {
+      if (Platform.currentTime < disabledUntil) {
         throw new SQLException("Server is temporarily disabled: " + throwMessage)
       }
     }
@@ -27,7 +29,8 @@ trait AutoDisabler {
       } else {
         consecutiveErrors += 1
         if (consecutiveErrors >= disableErrorCount) {
-          disabledUntil = disableDuration.fromNow
+          //disabledUntil = disableDuration.fromNow
+          disabledUntil = Long.MaxValue 
         }
       }
     }

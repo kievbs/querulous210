@@ -1,7 +1,7 @@
 package com.twitter.querulous.test
 
 import scala.collection.mutable.Map
-import com.twitter.util.Time
+import compat.Platform
 import com.twitter.querulous.StatsCollector
 
 
@@ -14,10 +14,10 @@ class FakeStatsCollector extends StatsCollector {
   }
 
   def time[A](name: String)(f: => A): A = {
-    val start = Time.now
+    val start = Platform.currentTime
     val rv = f
-    val end = Time.now
-    times += (name -> ((end-start).inMillis + times.getOrElseUpdate(name, 0L)))
+    val end = Platform.currentTime
+    times += (name -> ((end-start) + times.getOrElseUpdate(name, 0L)))
     rv
   }
 }

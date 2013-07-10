@@ -1,12 +1,12 @@
 package com.twitter.querulous.query
 
 import java.sql.{SQLException, Connection}
-import com.twitter.util.Duration
+import concurrent.duration.Duration
 import scala.collection.Map
 import com.twitter.querulous.{Timeout, TimeoutException}
 
 
-class SqlQueryTimeoutException(val timeout: Duration) extends SQLException("Query timeout: " + timeout.inMillis + " msec")
+class SqlQueryTimeoutException(val timeout: Duration) extends SQLException("Query timeout: " + timeout.toMillis + " msec")
 
 /**
  * A {@code QueryFactory} that creates {@link Query}s that execute subject to a {@code timeout}.  An

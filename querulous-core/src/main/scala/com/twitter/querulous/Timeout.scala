@@ -2,7 +2,7 @@ package com.twitter.querulous
 
 import java.util.logging.{Logger, Level}
 import java.util.{Timer, TimerTask}
-import com.twitter.util.Duration
+import scala.concurrent.duration._
 
 
 class TimeoutException extends Exception
@@ -12,7 +12,7 @@ object Timeout {
 
   def apply[T](timer: Timer, timeout: Duration)(f: => T)(onTimeout: => Unit): T = {
     @volatile var cancelled = false
-    val task = if (timeout.inMillis > 0)
+    val task = if (timeout.toMillis > 0)
       Some(schedule(timer, timeout, { cancelled = true; onTimeout }))
     else None
 
@@ -46,7 +46,7 @@ object Timeout {
         }
       }
     }
-    timer.schedule(task, timeout.inMillis)
+    timer.schedule(task, timeout.toMillis)
     task
   }
 }

@@ -1,7 +1,7 @@
 package com.twitter.querulous.test
 
 import java.sql.Connection
-import com.twitter.conversions.time._
+import concurrent.duration._
 import com.twitter.querulous.database.Database
 
 trait FakeDatabase extends Database {
@@ -13,9 +13,9 @@ trait FakeDatabase extends Database {
   val extraUrlOptions: Map[String,String] = Map.empty
 }
 
-class FakeDBConnectionWrapper(connection: Connection, before: Option[String => Unit])
-extends Database
-with FakeDatabase {
+class FakeDBConnectionWrapper(
+    connection :Connection, 
+    before     :Option[String => Unit]) extends Database with FakeDatabase {
   def this(connection: Connection) = this(connection, None)
   def this(connection: Connection, before: String => Unit) = this(connection, Some(before))
 

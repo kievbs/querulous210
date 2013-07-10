@@ -2,16 +2,16 @@ package com.twitter.querulous.database
 
 import com.twitter.querulous.{FutureTimeout, TimeoutException}
 import java.sql.{Connection, SQLException}
-import com.twitter.util.Duration
+import concurrent.duration.Duration
 
 
 class SqlDatabaseTimeoutException(msg: String, val timeout: Duration) extends SQLException(msg)
 
 class TimingOutDatabaseFactory(
-  val databaseFactory: DatabaseFactory,
-  val poolSize: Int,
-  val queueSize: Int,
-  val openTimeout: Duration)
+  val databaseFactory :DatabaseFactory,
+  val poolSize        :Int,
+  val queueSize       :Int,
+  val openTimeout     :Duration )
 extends DatabaseFactory {
 
   private def newTimeoutPool() = new FutureTimeout(poolSize, queueSize)
@@ -28,11 +28,11 @@ extends DatabaseFactory {
 }
 
 class TimingOutDatabase(
-  val database: Database,
-  timeout: FutureTimeout,
-  openTimeout: Duration)
-extends Database
-with DatabaseProxy {
+    val database  :Database,
+    timeout       :FutureTimeout,
+    openTimeout   :Duration)
+  extends Database with DatabaseProxy {
+  
   val label = database.name match {
     case null => database.hosts.mkString(",") +"/ (null)"
     case name => database.hosts.mkString(",") +"/"+ name

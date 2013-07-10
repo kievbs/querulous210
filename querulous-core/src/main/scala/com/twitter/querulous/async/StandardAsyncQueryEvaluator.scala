@@ -1,32 +1,34 @@
 package com.twitter.querulous.async
 
 import java.sql.ResultSet
-import com.twitter.util.Future
+import concurrent.Future
 import com.twitter.querulous.query.{QueryClass, QueryFactory}
 import com.twitter.querulous.evaluator.{Transaction, ParamsApplier}
 
 
 class StandardAsyncQueryEvaluatorFactory(
-  databaseFactory: AsyncDatabaseFactory,
-  queryFactory: QueryFactory)
-extends AsyncQueryEvaluatorFactory {
+    databaseFactory :AsyncDatabaseFactory,
+    queryFactory    :QueryFactory)
+  extends AsyncQueryEvaluatorFactory {
+    
     def apply(
-    hosts: List[String],
-    name: String,
-    username: String,
-    password: String,
-    urlOptions: Map[String, String],
-    driverName: String
-  ): AsyncQueryEvaluator = {
-    new StandardAsyncQueryEvaluator(
-      databaseFactory(hosts, name, username, password, urlOptions, driverName),
-      queryFactory
-    )
-  }
+      hosts      :List[String],
+      name       :String,
+      username   :String,
+      password   :String,
+      urlOptions :Map[String, String],
+      driverName :String ): AsyncQueryEvaluator = {
+
+      new StandardAsyncQueryEvaluator(
+        databaseFactory(hosts, name, username, password, urlOptions, driverName),
+        queryFactory
+      )
+    }
 }
 
-class StandardAsyncQueryEvaluator(val database: AsyncDatabase, queryFactory: QueryFactory)
-extends AsyncQueryEvaluator {
+class StandardAsyncQueryEvaluator(
+    val database: AsyncDatabase, queryFactory: QueryFactory) extends AsyncQueryEvaluator {
+  
   def select[A](queryClass: QueryClass, query: String, params: Any*)(f: ResultSet => A) = {
     withTransaction(_.select(queryClass, query, params: _*)(f))
   }

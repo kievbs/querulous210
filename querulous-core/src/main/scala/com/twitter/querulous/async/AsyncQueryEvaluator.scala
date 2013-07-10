@@ -1,24 +1,22 @@
 package com.twitter.querulous.async
 
-import java.util.concurrent.{Executors, LinkedBlockingQueue, TimeUnit, ThreadPoolExecutor}
 import java.sql.ResultSet
-import com.twitter.util.{Future, FuturePool}
+import concurrent.Future
 import com.twitter.querulous.config
 import com.twitter.querulous.DaemonThreadFactory
 import com.twitter.querulous.evaluator._
 import com.twitter.querulous.query.{QueryClass, SqlQueryFactory}
 import com.twitter.querulous.database.{ThrottledPoolingDatabaseFactory, Database}
-import com.twitter.conversions.time._
+import concurrent.duration._
 
 trait AsyncQueryEvaluatorFactory {
   def apply(
-    dbhosts: List[String],
-    dbname: String,
-    username: String,
-    password: String,
-    urlOptions: Map[String, String],
-    driverName: String
-  ): AsyncQueryEvaluator
+    dbhosts     :List[String],
+    dbname      :String,
+    username    :String,
+    password    :String,
+    urlOptions  :Map[String, String],
+    driverName  :String               ): AsyncQueryEvaluator
 
   def apply(dbhost: String, dbname: String, username: String, password: String, urlOptions: Map[String, String]): AsyncQueryEvaluator = {
     apply(List(dbhost), dbname, username, password, urlOptions, Database.DEFAULT_DRIVER_NAME)

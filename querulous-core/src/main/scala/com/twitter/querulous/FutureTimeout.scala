@@ -2,7 +2,7 @@ package com.twitter.querulous
 
 import java.util.concurrent.{ThreadFactory, TimeoutException => JTimeoutException, _}
 import java.util.concurrent.atomic.AtomicInteger
-import com.twitter.util.Duration
+import concurrent.duration._
 
 
 class FutureTimeout(poolSize: Int, queueSize: Int) {
@@ -43,7 +43,7 @@ class FutureTimeout(poolSize: Int, queueSize: Int) {
     val future = new FutureTask(task)
     try {
       executor.execute(future)
-      future.get(timeout.inMillis, TimeUnit.MILLISECONDS)
+      future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
     } catch {
       case e: JTimeoutException =>
         task.cancel()

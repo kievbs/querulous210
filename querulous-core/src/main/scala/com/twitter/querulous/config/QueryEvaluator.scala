@@ -3,7 +3,7 @@ package com.twitter.querulous.config
 import com.twitter.querulous._
 import com.twitter.querulous.database.DatabaseFactory
 import com.twitter.querulous.query.QueryFactory
-import com.twitter.util.Duration
+import concurrent.duration._
 import evaluator._
 
 trait AutoDisablingQueryEvaluator {

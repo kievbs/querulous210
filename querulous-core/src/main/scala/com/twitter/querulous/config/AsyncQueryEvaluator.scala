@@ -1,20 +1,22 @@
 package com.twitter.querulous.config
 
-import com.twitter.util
 import com.twitter.querulous
 import com.twitter.querulous.async
 import com.twitter.querulous.database.DatabaseFactory
 import com.twitter.querulous.query.QueryFactory
+import concurrent.ExecutionContext
 
 abstract class AsyncQueryEvaluator {
-  var database: Database     = new Database
-  var query: Query           = new Query
-  var singletonFactory       = false
-  var maxWaiters             = Int.MaxValue
+  var database          = new Database
+  var query             = new Query
+  var singletonFactory  = false
+
+  def contextFactory :ExecutionContext
+  //var maxWaiters             = Int.MaxValue
 
   // Size of the work pool used by the AsyncDatabase to do all the DB query work.
   // This should typically be the same size as the DB connection pool.
-  var workPoolSize: Int
+  //var workPoolSize: Int
 
   private var memoizedFactory: Option[async.AsyncQueryEvaluatorFactory] = None
 
@@ -40,8 +42,7 @@ abstract class AsyncQueryEvaluator {
 
       memoizedFactory = memoizedFactory orElse {
         var dbFactory: async.AsyncDatabaseFactory = new async.BlockingDatabaseWrapperFactory(
-          workPoolSize,
-          maxWaiters,
+          contextFactory _,
           newDatabaseFactory(stats, dbStatsFactory),
           stats
         )

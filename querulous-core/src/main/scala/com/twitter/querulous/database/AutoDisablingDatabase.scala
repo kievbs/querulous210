@@ -1,7 +1,7 @@
 package com.twitter.querulous.database
 
 import com.twitter.querulous.AutoDisabler
-import com.twitter.util.Duration
+import concurrent.duration.Duration
 import java.sql.{Connection, SQLException}
 
 
