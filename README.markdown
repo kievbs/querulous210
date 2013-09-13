@@ -175,7 +175,7 @@ to be used with
 [com.twitter.util.Eval](https://github.com/twitter/util) or in code:
 
     import com.twitter.querulous.config._
-    import com.twitter.conversions.time._
+    import scala.concurrent.duration._
 
     val config = com.twitter.querulous.config.QueryEvaluator {
       lazy val log = Logger.get()

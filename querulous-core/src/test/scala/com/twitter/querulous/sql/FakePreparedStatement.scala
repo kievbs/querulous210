@@ -61,6 +61,6 @@ class FakePreparedStatement(
   }
 
   private def takeTimeToExecQuery() {
-    Thread.sleep(FakeContext.getTimeTakenToExecQuery(conn.asInstanceOf[FakeConnection].host).inMillis)
+    Thread.sleep(FakeContext.getTimeTakenToExecQuery(conn.asInstanceOf[FakeConnection].host).toMillis)
   }
 }

@@ -1,8 +1,7 @@
 package com.twitter.querulous.sql
 
 import scala.collection.mutable
-import com.twitter.util.Duration
-import com.twitter.conversions.time._
+import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 
 object FakeContext {
@@ -44,7 +43,7 @@ object FakeContext {
       configMap.get(host) match {
         case Some(c) => c.timeTakenToOpenConn = numSecs
         case None => {
-          if (numSecs.inSeconds > 0) {
+          if (numSecs.toSeconds > 0) {
             configMap.put(host, FakeServerConfig(timeTakenToOpenConn = numSecs))
           }
         }
@@ -69,7 +68,7 @@ object FakeContext {
       configMap.get(host) match {
         case Some(c) => c.timeTakenToExecQuery = numSecs
         case None => {
-          if (numSecs.inSeconds > 0) {
+          if (numSecs.toSeconds > 0) {
             configMap.put(host, FakeServerConfig(timeTakenToExecQuery = numSecs))
           }
         }

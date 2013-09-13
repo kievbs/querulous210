@@ -1,12 +1,13 @@
 package com.twitter.querulous.unit
 
 import java.sql.{ResultSet, SQLException}
-import org.specs.Specification
-import org.specs.mock.JMocker
+import org.specs2.mutable.Specification
+import org.specs2.mock.Mockito
+import org.specs2.matcher._
 import com.twitter.querulous.test.FakeQuery
 import com.twitter.querulous.query.RetryingQuery
 
-class RetryingQuerySpec extends Specification with JMocker {
+class RetryingQuerySpec extends Specification with Mockito {
   "RetryingQuery" should {
     val retries = 5
 

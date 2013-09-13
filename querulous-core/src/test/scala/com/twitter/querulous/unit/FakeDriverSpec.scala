@@ -1,18 +1,27 @@
 package com.twitter.querulous.unit
 
 import com.twitter.querulous.ConfiguredSpecification
-import com.twitter.conversions.time._
+import scala.concurrent.duration._
+import scala.concurrent.duration.{Duration => D}
 import org.apache.commons.dbcp.DelegatingConnection
 import com.twitter.querulous.database._
 import com.twitter.querulous.sql.{FakeContext, FakeConnection, FakeDriver}
 import com.mysql.jdbc.exceptions.jdbc4.CommunicationsException
 import java.sql.{SQLException, DriverManager}
+import org.specs2.mutable._
+import org.specs2.matcher._
 
 class FakeDriverSpec extends ConfiguredSpecification {
+  sequential
+
   val host = config.hostnames.mkString(",")
   val connString = FakeDriver.DRIVER_NAME + "://" + host
 
-  def testFactory(factory: DatabaseFactory) {
+  val ONE_SECOND = D(1,SECONDS)
+  val TEN_MILLIS = D(10,MILLISECONDS)
+  val ZERO_SECOND  = D(0,SECONDS)
+
+  def testFactory(factory: DatabaseFactory) = {
     "the real connection should be FakeConnection" in {
       val db    = factory(config.hostnames.toList, null, config.username, config.password, Map.empty, FakeDriver.DRIVER_NAME)
       val conn = db.open() match {
@@ -30,14 +39,14 @@ class FakeDriverSpec extends ConfiguredSpecification {
   }
 
   "ApachePoolingDatabaseFactory" should {
-    val factory = new ApachePoolingDatabaseFactory(10, 10, 1.second, 10.millis, false, 0.seconds,
+    val factory = new ApachePoolingDatabaseFactory(10, 10, ONE_SECOND, TEN_MILLIS, false, ZERO_SECOND,
       Map.empty)
 
     testFactory(factory)
   }
 
   "ThrottledPoolingDatabaseFactory" should {
-    val factory = new ThrottledPoolingDatabaseFactory(10, 1.second, 10.millis, 1.seconds, Map.empty)
+    val factory = new ThrottledPoolingDatabaseFactory(10, ONE_SECOND, TEN_MILLIS, ONE_SECOND, Map.empty)
 
     testFactory(factory)
   }
@@ -45,8 +54,9 @@ class FakeDriverSpec extends ConfiguredSpecification {
   "Getting connection from FakeDriver" should {
     "return a FakeConnection" in {
       DriverManager.getConnection(connString, null) must haveClass[FakeConnection]
-    }
-
+    } 
+  }
+  "Getting another conn from FakeDriver" should {
     "throw an exception when db is marked down" in {
       FakeContext.markServerDown(host)
       try {
@@ -64,7 +74,7 @@ class FakeDriverSpec extends ConfiguredSpecification {
       conn.prepareStatement("SELECT 1 FROM DUAL") must throwA[SQLException]
     }
 
-    "throw an exception when underlying db is down" in {
+  "throw an exception when underlying db is down" in {
       val conn = DriverManager.getConnection(connString, null)
       try {
         FakeContext.markServerDown(host)
@@ -96,11 +106,13 @@ class FakeDriverSpec extends ConfiguredSpecification {
   }
 
   "FakeResultSet" should {
-    doBefore {
-      FakeContext.setQueryResult(host, "SELECT 1 FROM DUAL", Array(Array[java.lang.Object](1.asInstanceOf[AnyRef])))
+    lazy val b = new Before {
+      def before =
+        FakeContext.setQueryResult(host, "SELECT 1 FROM DUAL", Array(Array[java.lang.Object](1.asInstanceOf[AnyRef])))
     }
 
     "return result as being registered" in {
+      FakeContext.setQueryResult(host, "SELECT 1 FROM DUAL", Array(Array[java.lang.Object](1.asInstanceOf[AnyRef])))
       val stmt = DriverManager.getConnection(connString, null).prepareStatement("SELECT 1 FROM DUAL")
       val rs = stmt.executeQuery()
       rs.next() must_== true
@@ -109,6 +121,7 @@ class FakeDriverSpec extends ConfiguredSpecification {
     }
 
     "throw an exception when iterating through a closed one" in {
+      FakeContext.setQueryResult(host, "SELECT 1 FROM DUAL", Array(Array[java.lang.Object](1.asInstanceOf[AnyRef])))
       val stmt = DriverManager.getConnection(connString, null).prepareStatement("SELECT 1 FROM DUAL")
       val rs = stmt.executeQuery()
       rs.close()
@@ -116,6 +129,7 @@ class FakeDriverSpec extends ConfiguredSpecification {
     }
 
     "throw an exception when iterating through it while underlying connection is closed" in {
+      FakeContext.setQueryResult(host, "SELECT 1 FROM DUAL", Array(Array[java.lang.Object](1.asInstanceOf[AnyRef])))
       val conn = DriverManager.getConnection(connString, null)
       val stmt = conn.prepareStatement("SELECT 1 FROM DUAL")
       val rs = stmt.executeQuery()
@@ -123,7 +137,7 @@ class FakeDriverSpec extends ConfiguredSpecification {
       rs.next() must throwA[SQLException]
     }
 
-    "throw an exception when iterating through it while underlying db is down" in {
+   "throw an exception when iterating through it while underlying db is down" in {
       val stmt = DriverManager.getConnection(connString, null).prepareStatement("SELECT 1 FROM DUAL")
       val rs = stmt.executeQuery()
       try {
@@ -132,6 +146,6 @@ class FakeDriverSpec extends ConfiguredSpecification {
       } finally {
         FakeContext.markServerUp(host)
       }
-    }
-  }
+    } 
+  } 
 }

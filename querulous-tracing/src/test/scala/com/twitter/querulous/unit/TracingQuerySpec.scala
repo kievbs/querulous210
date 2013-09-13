@@ -1,12 +1,12 @@
 package com.twitter.querulous.unit
 
 import java.sql.Connection
-import org.specs.Specification
-import org.specs.mock.JMocker
+import org.specs2.Specification
+import org.specs2.mock.Mockito
 import com.twitter.querulous.query._
 import com.twitter.finagle.tracing._
 
-class TracingQuerySpec extends Specification with JMocker {
+class TracingQuerySpec extends Specification with Mockito {
   "TracingQuery" should {
 
     "add records as query is executed" in {

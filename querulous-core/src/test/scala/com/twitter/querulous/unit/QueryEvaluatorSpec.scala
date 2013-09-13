@@ -1,59 +1,78 @@
 package com.twitter.querulous.unit
 
-import java.sql.{SQLException, Connection}
+import java.sql.{SQLException, Connection, PreparedStatement, ResultSet}
 import scala.collection.mutable
 import com.twitter.querulous.TestEvaluator
 import com.twitter.querulous.evaluator.StandardQueryEvaluator
 import com.twitter.querulous.query._
 import com.twitter.querulous.test.FakeDBConnectionWrapper
 import com.twitter.querulous.ConfiguredSpecification
-import org.specs.mock.{ClassMocker, JMocker}
+import org.specs2.mock.Mockito
+import org.specs2.mutable._
 
-class QueryEvaluatorSpec extends ConfiguredSpecification with JMocker with ClassMocker {
+class QueryEvaluatorSpec extends ConfiguredSpecification with Mockito  {
   import TestEvaluator._
+  sequential
 
   "QueryEvaluator" should {
-    skipIfCI {
+    //skipIfCI {
       val queryEvaluator = testEvaluatorFactory(config)
       val rootQueryEvaluator = testEvaluatorFactory(config.withoutDatabase)
       val queryFactory = new SqlQueryFactory
 
-      doBefore {
-        rootQueryEvaluator.execute("CREATE DATABASE IF NOT EXISTS db_test")
+      implicit lazy val ba = new BeforeAfter {
+        def before = {
+          rootQueryEvaluator.execute("CREATE DATABASE IF NOT EXISTS db_test")
+        }
+
+        def after = {
+          queryEvaluator.execute("DROP TABLE IF EXISTS foo")
+        }
       }
 
-      doAfter {
-        queryEvaluator.execute("DROP TABLE IF EXISTS foo")
-      }
-
-      "connection pooling" in {
-        val connection = mock[Connection]
-        val database = new FakeDBConnectionWrapper(connection)
+      "connection pooling" in {   
 
         "transactionally" >> {
+          val connection = mock[Connection]
+          val statement = mock[PreparedStatement]
+          val rs = mock[ResultSet]
+
+          val database = new FakeDBConnectionWrapper(connection)
+          connection.prepareStatement("SELECT 1") returns statement
+          statement.getResultSet returns rs
+
           val queryEvaluator = new StandardQueryEvaluator(database, queryFactory)
 
-          expect {
+          queryEvaluator.transaction { transaction =>
+            transaction.selectOne("SELECT 1") { _.getInt("1") }
+          }
+
+          got {
             one(connection).setAutoCommit(false)
             one(connection).prepareStatement("SELECT 1")
             one(connection).commit()
             one(connection).setAutoCommit(true)
           }
-
-          queryEvaluator.transaction { transaction =>
-            transaction.selectOne("SELECT 1") { _.getInt("1") }
-          }
         }
 
         "nontransactionally" >> {
-          val queryEvaluator = new StandardQueryEvaluator(database, queryFactory)
+          val connection = mock[Connection]
+          val statement = mock[PreparedStatement]
+          val rs = mock[ResultSet]
 
-          expect {
-            one(connection).prepareStatement("SELECT 1")
-          }
+          val database = new FakeDBConnectionWrapper(connection)
+
+          connection.prepareStatement("SELECT 1") returns statement
+          statement.getResultSet returns rs
+
+          val queryEvaluator = new StandardQueryEvaluator(database, queryFactory)
 
           var list = new mutable.ListBuffer[Int]
           queryEvaluator.selectOne("SELECT 1") { _.getInt("1") }
+
+          got {
+            one(connection).prepareStatement("SELECT 1")
+          }
         }
       }
 
@@ -74,7 +93,9 @@ class QueryEvaluatorSpec extends ConfiguredSpecification with JMocker with Class
       }
 
       "transaction" in {
+
         "when there is an exception" >> {
+
           queryEvaluator.execute("CREATE TABLE foo (bar INT) ENGINE=INNODB")
 
           try {
@@ -83,7 +104,7 @@ class QueryEvaluatorSpec extends ConfiguredSpecification with JMocker with Class
               throw new Exception("oh noes")
             }
           } catch {
-            case _ =>
+            case _ :Throwable =>
           }
 
           queryEvaluator.select("SELECT * FROM foo")(_.getInt("bar")).toList mustEqual Nil
@@ -97,8 +118,8 @@ class QueryEvaluatorSpec extends ConfiguredSpecification with JMocker with Class
           }
 
           queryEvaluator.select("SELECT * FROM foo") { row => (row.getString("bar"), row.getInt("baz")) }.toList mustEqual List(("one", 2))
-        }
-      }
-    }
+        } 
+      } 
+    //}
   }
 }

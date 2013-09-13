@@ -105,7 +105,7 @@ object FakeConnection {
       case _ => properties.getProperty("connectTimeout", "0").toLong
     }
 
-    val timeTakenToOpenConnInMiills = FakeContext.getTimeTakenToOpenConn(host).inMillis
+    val timeTakenToOpenConnInMiills = FakeContext.getTimeTakenToOpenConn(host).toMillis
     if (timeTakenToOpenConnInMiills > connectTimeoutInMillis) {
       Thread.sleep(connectTimeoutInMillis)
       throw new SocketException("Connection timeout")

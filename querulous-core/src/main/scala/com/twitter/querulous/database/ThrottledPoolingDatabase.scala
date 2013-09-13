@@ -23,14 +23,14 @@ class PooledConnection(c: Connection, p: ObjectPool) extends DelegatingConnectio
   }
 
   override def close() {
-    val isClosed = try { c.isClosed() } catch {
+    val closed = try { c.isClosed() } catch {
       case e: Exception => {
         invalidateConnection()
         throw e
       }
     }
 
-    if (!isClosed) {
+    if (!closed) {
       pool match {
         case Some(pl) => pl.returnObject(this)
         case None =>

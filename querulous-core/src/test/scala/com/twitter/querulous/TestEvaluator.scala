@@ -3,15 +3,32 @@ package com.twitter.querulous
 import com.twitter.querulous.database.SingleConnectionDatabaseFactory
 import com.twitter.querulous.query.SqlQueryFactory
 import com.twitter.querulous.evaluator.{QueryEvaluator, StandardQueryEvaluatorFactory}
-import com.twitter.util.Eval
+import com.twitter.querulous.config.Connection
+//import com.twitter.util.Eval
 import java.io.{File, FileNotFoundException}
 import java.util.concurrent.CountDownLatch
-import org.specs.Specification
+import org.specs2.mutable._ //Specification
+import org.specs2.time.{ Duration => SpecsDuration }
+import concurrent.duration.{ Duration => ScalaDuration }
 
-import config.Connection
 
 trait ConfiguredSpecification extends Specification {
-  lazy val config = try {
+
+  implicit def specsDurToScalaDur( dur :SpecsDuration ) :ScalaDuration = ScalaDuration(dur.inMillis, "millis")
+
+  lazy val config = new Connection {
+    val hostnames = Seq("localhost")
+    val database = "db_test"
+    val username = {
+      val userEnv = System.getenv("DB_USERNAME")
+      if (userEnv == null) "root" else userEnv
+    }
+
+    val password = {
+      val passEnv = System.getenv("DB_PASSWORD")
+      if (passEnv == null) "" else passEnv
+    }
+  } /*try {
     val eval = new Eval
     // if this repo is embedded in other repo (eg. birdcage), test.scala will be
     // one level deeper than if running in a detached repo mode.
@@ -26,15 +43,15 @@ trait ConfiguredSpecification extends Specification {
     case e =>
       e.printStackTrace()
       throw e
-  }
+  }*/
 
   /**
    * Wrap a test in this method to prevent it from running when on the CI machine.
    * Some tests require a local mysqld, and will fail if executed on the CI machine.
    */
-  def skipIfCI(f: => Unit) {
+  def skipIfCI(f: => Unit) = {
     if (System.getenv().containsKey("SBT_CI")) {
-      skip("skipping on CI machine")
+      //skip("skipping on CI machine")
     } else {
       f
     }

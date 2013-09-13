@@ -9,7 +9,7 @@ trait AutoDisabler {
   protected val disableDuration: Duration
 
   //private var disabledUntil: Time = Time.epoch
-  private var disabledUntil :Long = Long.MaxValue
+  private var disabledUntil :Long = Platform.currentTime //Long.MaxValue
   private var consecutiveErrors = 0
 
   protected def throwIfDisabled(throwMessage: String): Unit = {

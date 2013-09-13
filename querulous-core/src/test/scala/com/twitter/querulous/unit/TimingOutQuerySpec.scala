@@ -1,20 +1,21 @@
 package com.twitter.querulous.unit
 
 import java.sql.ResultSet
-import org.specs.mock.{JMocker, ClassMocker}
+import org.specs2.mock.Mockito //, ClassMocker}
 import com.twitter.querulous.TestEvaluator
 import com.twitter.querulous.test.FakeQuery
 import com.twitter.querulous.query.{TimingOutQuery, SqlQueryTimeoutException}
 import com.twitter.querulous.ConfiguredSpecification
-import com.twitter.conversions.time._
+import scala.concurrent.duration.{ Duration => D }
+import scala.concurrent.duration._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
-object TimingOutQuerySpec extends ConfiguredSpecification with JMocker with ClassMocker {
+object TimingOutQuerySpec extends ConfiguredSpecification with Mockito { //with ClassMocker {
   "TimingOutQuery" should {
-    skipIfCI {
+    //skipIfCI {
       val connection = TestEvaluator.testDatabaseFactory(
         config.hostnames.toList, config.username, config.password).open()
-      val timeout = 1.second
+      val timeout = D(1, SECONDS )
       val resultSet = mock[ResultSet]
 
       "timeout" in {
@@ -23,7 +24,7 @@ object TimingOutQuerySpec extends ConfiguredSpecification with JMocker with Clas
           override def cancel() = { latch.countDown() }
 
           override def select[A](f: ResultSet => A) = {
-            latch.await(2.second.inMillis, TimeUnit.MILLISECONDS)
+            latch.await(2000, TimeUnit.MILLISECONDS)
             super.select(f)
           }
         }
@@ -44,5 +45,5 @@ object TimingOutQuerySpec extends ConfiguredSpecification with JMocker with Clas
         latch.getCount mustEqual 1
       }
     }
-  }
+  //}
 }

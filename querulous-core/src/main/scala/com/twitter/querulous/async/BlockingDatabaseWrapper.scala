@@ -1,13 +1,9 @@
 package com.twitter.querulous.async
 
-//import java.util.logging.{Logger, Level}
-//import java.util.concurrent.{Executors, CancellationException, ThreadPoolExecutor}
-//import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, RejectedExecutionException}
-//import java.util.concurrent.atomic.AtomicBoolean
+
 import java.sql.Connection
-//import com.twitter.util.{Future, FuturePool, JavaTimer, TimeoutException}
 import concurrent._
-import com.twitter.querulous.{StatsCollector, NullStatsCollector }//, DaemonThreadFactory}
+import com.twitter.querulous.{StatsCollector, NullStatsCollector }
 import com.twitter.querulous.database.{Database, DatabaseFactory}
 import com.twitter.querulous.config
 
@@ -63,7 +59,7 @@ class BlockingDatabaseWrapper(
   // We cache the connection checked out from the underlying database in a thread local so
   // that each workPool thread can hold on to a connection for its lifetime. This saves expensive
   // context switches in borrowing/returning connections from the underlying database per request.
-  private val tlConnection = new ThreadLocal[Connection] {
+  private lazy val tlConnection = new ThreadLocal[Connection] {
     override def initialValue() = {
       stats.incr("db-async-cached-connection-acquire-total", 1)
       stats.incr("db-async-cached-connection-acquire-" + dbStr, 1)
@@ -103,9 +99,6 @@ class BlockingDatabaseWrapper(
             throw e
           }
         }
-    /*  } else {
-        throw new CancellationException
-      }*/
     }
 
     // If openTimeout elapsed and our task has still not started, cancel it and return the

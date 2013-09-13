@@ -1,51 +1,68 @@
 package com.twitter.querulous.unit
 
-import com.twitter.conversions.time._
+import scala.concurrent.duration.{ Duration => D }
+import scala.concurrent.duration._
 import org.apache.commons.pool.ObjectPool
-import org.specs.Specification
-import org.specs.mock.JMocker
-import org.specs.util.TimeConversions
+import org.specs2.mutable._ // Specification
+import org.specs2.mock.Mockito
+import org.specs2.matcher._
+import org.specs2.time.TimeConversions
 import com.twitter.querulous.database._
 import java.sql.{SQLException, Connection}
 
-class PooledConnectionSpec extends Specification with JMocker {
+class PooledConnectionSpec extends Specification with Mockito {
   "PooledConnectionSpec" should {
-    val p = mock[ObjectPool]
-    val c = mock[Connection]
-
     "return to the pool" in {
+      val p = mock[ObjectPool]
+      val c = mock[Connection]
       val conn = new PooledConnection(c, p)
 
-      expect {
-        one(c).isClosed() willReturn false
-        one(p).returnObject(conn)
-      }
+      c.isClosed() returns false 
+      
+      //there was one(c).isClosed() willReturn false
+      //there was one(p).returnObject(conn)
 
       conn.close()
+
+      got {
+        one(c).isClosed()
+        one(p).returnObject(conn)
+      }
     }
 
-    "eject from the pool only once" in {
+   "eject from the pool only once" in {
+      val p = mock[ObjectPool]
+      val c = mock[Connection]
       val conn = new PooledConnection(c, p)
 
-      expect {
-        one(c).isClosed() willReturn true
-        one(p).invalidateObject(conn)
-        one(c).isClosed() willReturn true
-      }
+      
+      c.isClosed() returns true
+      c.isClosed() returns true
+
+      //there was one(c).isClosed() willReturn true
+      //there was one(p).invalidateObject(conn)
+      //there was one(c).isClosed() willReturn true
+      
 
       conn.close() must throwA[SQLException]
       conn.close() must throwA[SQLException]
+
+      got {
+        one(c).isClosed() andThen
+        one(p).invalidateObject(conn) andThen
+        one(c).isClosed() 
+      }
     }
   }
 }
 
-class ThrottledPoolSpec extends Specification with JMocker {
+class ThrottledPoolSpec extends Specification with Mockito {
   "ThrottledPoolSpec" should {
     val connection = mock[Connection]
 
-    val repopulateInterval = 250.millis
-    val idleTimeout = 50.millis
-    def createPool(size: Int) = { new ThrottledPool( { () => connection }, size, 10.millis, 50.millis, "test") }
+    val repopulateInterval = D(250, MILLISECONDS )
+    val idleTimeout = D(50, MILLISECONDS)
+    def createPool(size: Int) = { new ThrottledPool( { () => connection }, size, D(10, MILLISECONDS), D(50,MILLISECONDS), "test") }
 
     "create and populate" in {
       val pool = createPool(5)
@@ -54,7 +71,7 @@ class ThrottledPoolSpec extends Specification with JMocker {
     }
 
     "successfully construct if connections fail to create" in {
-      val pool = new ThrottledPool( { () => throw new Exception("blah!") }, 5, 10.millis, 50.millis, "test")
+      val pool = new ThrottledPool( { () => throw new Exception("blah!") }, 5, D(10, MILLISECONDS), D(50, MILLISECONDS), "test")
 
       pool.getTotal() mustEqual 0
     }
@@ -104,18 +121,19 @@ class ThrottledPoolSpec extends Specification with JMocker {
     }
 
     "eject idle" in {
-      expect {
-        allowing(connection).close()
-      }
+      //expect {
+        //there was atLeastOne(connection).close() // allowing(connection).close()
+      //}
 
       val pool = createPool(5)
 
       pool.getTotal() mustEqual 5
 
-      Thread.sleep(idleTimeout.inMillis + 5)
+      Thread.sleep(idleTimeout.toMillis + 5)
       pool.borrowObject()
 
       pool.getTotal() mustEqual 1
+      there was atLeastOne(connection).close()
     }
 
     "repopulate" in {
@@ -134,7 +152,7 @@ class ThrottledPoolSpec extends Specification with JMocker {
       // because first check is applied immediately
       pool.getTotal() must eventually(4, TimeConversions.intToRichLong(100).millis) (be_==(1))
       pool.getTotal() must eventually(4, TimeConversions.intToRichLong(100).millis) (be_==(2))
-      Thread.sleep(repopulateInterval.inMillis + 100)
+      Thread.sleep(repopulateInterval.toMillis + 100)
 
       // make sure that the watchdog thread won't add more connections than the size of the pool
       pool.getTotal() must be_==(2)

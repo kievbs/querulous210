@@ -3,13 +3,14 @@ package com.twitter.querulous.unit
 import java.sql.Connection
 import org.apache.commons.dbcp.{DelegatingConnection => DBCPConnection}
 import com.mysql.jdbc.{ConnectionImpl => MySQLConnection}
-import org.specs.mock.{ClassMocker, JMocker}
-import com.twitter.conversions.time._
+import org.specs2.mock.Mockito
+import scala.concurrent.duration._
 import com.twitter.querulous.database._
 import com.twitter.querulous.ConfiguredSpecification
+import scala.concurrent.duration.{Duration => D}
 
 
-class DatabaseSpec extends ConfiguredSpecification with JMocker with ClassMocker {
+class DatabaseSpec extends ConfiguredSpecification with Mockito {
   val defaultProps = Map("socketTimeout" -> "41", "connectTimeout" -> "42")
 
   def mysqlConn(conn: Connection) = conn match {
@@ -18,7 +19,7 @@ class DatabaseSpec extends ConfiguredSpecification with JMocker with ClassMocker
     case c: MySQLConnection => c
   }
 
-  def testFactory(factory: DatabaseFactory) {
+  def testFactory(factory: DatabaseFactory) = {
     "allow specification of default query options" in {
       val db    = factory(config.hostnames.toList, null, config.username, config.password)
       val props = mysqlConn(db.open).getProperties
@@ -42,19 +43,19 @@ class DatabaseSpec extends ConfiguredSpecification with JMocker with ClassMocker
   }
 
   "SingleConnectionDatabaseFactory" should {
-    skipIfCI {
+    //skipIfCI {
       val factory = new SingleConnectionDatabaseFactory(defaultProps)
       testFactory(factory)
-    }
+    //}
   }
 
   "ApachePoolingDatabaseFactory" should {
-    skipIfCI {
+    //skipIfCI {
       val factory = new ApachePoolingDatabaseFactory(
-        10, 10, 1.second, 10.millis, false, 0.seconds, defaultProps
+        10, 10, D(1,SECONDS),D(10,MILLISECONDS), false, D(0,SECONDS), defaultProps
       )
 
       testFactory(factory)
-    }
+    //}
   }
 }

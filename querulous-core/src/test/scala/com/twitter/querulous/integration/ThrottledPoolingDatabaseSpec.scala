@@ -4,19 +4,22 @@ import com.twitter.querulous.ConfiguredSpecification
 import com.twitter.querulous.database.{SqlDatabaseTimeoutException, ThrottledPoolingDatabaseFactory}
 import com.twitter.querulous.query.SqlQueryFactory
 import com.twitter.querulous.evaluator.StandardQueryEvaluatorFactory
-import com.twitter.conversions.time._
+import scala.concurrent.duration.{Duration => D}
+import scala.concurrent.duration._
 
 object ThrottledPoolingDatabaseSpec {
-  val testDatabaseFactory = new ThrottledPoolingDatabaseFactory(1, 1.second, 1.second, 1.second, Map.empty)
+  val dur = D(1,SECONDS)
+  val testDatabaseFactory = new ThrottledPoolingDatabaseFactory(1, dur, dur, dur, Map.empty)
   val testQueryFactory = new SqlQueryFactory
   val testEvaluatorFactory = new StandardQueryEvaluatorFactory(testDatabaseFactory, testQueryFactory)
 }
 
 class ThrottledPoolingDatabaseSpec extends ConfiguredSpecification {
   import ThrottledPoolingDatabaseSpec._
+  sequential
 
   "ThrottledJdbcPoolSpec" should {
-    skipIfCI {
+    //skipIfCI {
       val queryEvaluator = testEvaluatorFactory(config)
 
       "execute some queries" >> {
@@ -28,13 +31,13 @@ class ThrottledPoolingDatabaseSpec extends ConfiguredSpecification {
         queryEvaluator.select("SELECT 1 FROM DUAL") { r =>
           queryEvaluator.select("SELECT 2 FROM DUAL") { r2 => } must throwA[SqlDatabaseTimeoutException]
         }
-      }
+      } 
 
       "ejects idle connections" >> {
         queryEvaluator.execute("set session wait_timeout = 1")
-        Thread.sleep(2.seconds.inMillis)
+        Thread.sleep(2000)
         queryEvaluator.select("SELECT 1 FROM DUAL") { _.getInt(1) } mustEqual List(1)
       }
-    }
+    //}
   }
 }
